@@ -12,7 +12,7 @@ ECMAScript中有5种基本数据类型：`Undefined` `Null` `Boolean` `Number` `
 
 **Undefined类型**
 
-Undefined类型的值为`undefined`，并且只有一个值，使用var声明一个变量未初始化时，这个变量的值就是undefined，例如：
+value:`undefined`使用var声明一个变量未初始化时，这个变量的值就是undefined，例如：
 		
 	var message;
 	
@@ -20,6 +20,20 @@ Undefined类型的值为`undefined`，并且只有一个值，使用var声明一
 
 `typeof undefined` ==> 'undefined'
 
+
+**Null类型**
+
+value: `null`表示一个空对象的指针
+
+undefined == null // true
+
+undefined === null // false
+
+`typeof null` ==> 'object'
+
+**Boolean类型**
+
+true | fase
 
 
 
