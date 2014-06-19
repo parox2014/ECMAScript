@@ -35,6 +35,25 @@ undefined === null // false
 
 true | fase
 
+要将一个值转换为Boolean可以调用转型函数Boolean()例如：
+
+	var message = 'hello world';
+	
+	var messageAsBoolean = Boolean(message);
+	
+可以对任何数据类型的值调用Boolean()函数，而且总会返回一个Boolean值，至于返回的是true还是false则取决于要转换值的数据类型及其实际值。
+
+**数据类型** **转换为true的值** **转换为false的值**
+
+Boolean true false
+
+String 任何非空字符串 ‘’空字符串
+
+Number 任何非零数字值（包括无穷大） 0和NaN
+
+Object 任何对象 0和null
+
+Undefined 不适用 undefined
 
 
 **面向对象（OOP）**
