@@ -191,101 +191,151 @@ p1与p2的sayName方法是相等的，可见，它们确实是共享的一个方
 		p1.sayName()//其实p1实例上并没有sayName这个方法
 		Person.prototype.sayName;//这时它会去原型对象上找这个方法
 
-**8.对象的扩展与继承：**
+**8.扩展与继承：**
+下面通过一个例子来看，如何实现对象的扩展与继承。  
+先定义一个基础对象（基类):
 
-    var Animal=function(){}
-    Animal.prototype.eatFood=function(){
-        alert('I\'m eating!');
-    }
+	    var Animal=function(weight){
+			this.weight=weight;
+		}//定义一个动物的基类
+	    Animal.prototype.eatFood=function(){//添加一个eatFood方法
+	        alert('I\'m eating!');
+	    }
+
+从基类上继承方法，还可以继承构造函数
+	    
+	    var Vivipara=function(weight){
+				Animal.call(this,weight);//继承构造函数
+			};//定义一个胎生动物的类，胎生动物也是动物，所以我们可以从Animal上继eatFood方法，而不用重写
+	    Vivipara.prototype=new Animal();//继承Animal,现在Vivipara也有了eatFood方法
+	    Vivipara.prototype.sayName=function(){//因为胎生动物可以发声，所以需要扩展，为其添加一个sayName方法
+	        alert('叽哩呱啦');
+	    }
+
+最后我们试试重写基类的方法
+    	
+	    var Human=function(name){
+	        this.name=name;
+	    }//定义一个人类
+	    Human.prototype=new Vivipara();//人类也是胎生动物，所以我们可以从vivipara上继承eatFood与sayName方法
+		//但是人类可以说话，可以正确说出自己的名字，所以我们需要重写sayName方法
+		//需要注意的是，这里的重写，其实并没有真的重写父类的方法，而是在当前类的原型上添加了一个与父类的方法同名的方法
+		//当调用一个对象的方法时，它如果在自己的身上或自己的原型身上找到了这个方法，就不会再去父类上找这个方法了。
+	    Human.prototype.sayName=function(){
+	        alert('My name is' +this.name);
+	    }
+
+现在我们定义好了三个类，尽管后面两个类都继承自别的类，但它们之间是互不影响的。
+		
+		var bird=new Animal();
+		bird.eatFood();//I'm eating
+	    
+		var dog=new Vivipara();
+		dog.sayName();//叽哩呱啦;
+		
+		var p1=new Human('Lucy');
+	    p1.eatFood();//I'm eating，与父类共享了eatFood方法
+	    p1.sayName();//输出My name is Lucy,而不是叽哩呱啦
+
+ **三、需要注意的地方：**  
+
+#####1.不要在实例化对象上设置或读取prototype。  
+实例上并没有prototype这个属性，取而代之的是，实例上有一个\_\_proto\_\_私有属性，指向了原型对象，既然是私有属性，我们也最好不要去读取或者修改它，因为不是所有浏览器都实现(开放)了它。
+	
+	    var Person=function(){}
+	    var p1=new Person;
+	    p1.prototype.sayName=function(){};//不要这样做
+		p1.__proto__.sayName=function(){};//不要这样做
+
+#####2.构造函数内及原型方法内关键字`this`的指向：  
+这也是常常造成困惑的地方，在大多数情况下，方法内的this指向的是拥有此方法的对象。但在原型方法与构造函数内情况有点不一样了，看看下面的例子:
+
+	    var Person=function(name){
+	        this.name=name;//如果作为普通函数调用，这里的this一般指向window，但作为构造函数调用时，此处的this指向的是构造函数的实例
+	    }
+	
+	    Person.prototype={
+	        sayName:function(){
+	            console.log(this.name);
+	        }
+	    }
+	
+		//原型方法内的this要看调用情况而定了，如果是实例调用，this同样是指向实例
+		var person=new Person('Lily');
+		person.sayName();//this指向person
+	
+		//如通通过下面的方法调用，this是指向原型对象,因为sayName方法的拥有者是原型对象，这符合上面说的大多数情况。
+		Person.prototype.sayName();
+
+#####3.静态方法（属性)、实例方法(属性)、原型方法(属性)：(也许名称并不标准，理解它的意思就行了)  
+
+直接在构造函数上添加的方法(属性)，叫静态方法(属性)。可以通过构造函数直接调用。
+
+	    var Person=function(){};
+	    Person.sayName=function(){
+	        alert(this.name);//静态方法内的this关键字指向的是构造函数。
+	    }
+		//直接调用
+		Person.sayName();//Person，this指向的是Person，所以输出的是构造函数的名字
+		//相反，实例不访问不到构造函数的静态方法的
+	    var p1=new Person;
+	    p1.sayName();//错误
+	    
+在构造函数内，通过this添加的方法(属性),叫实例方法(属性)。必须要先实例化才能调用，构造函数是不能访问的。
+	    
+	    var Person=function(name){
+	        this.name=name;//实例属性
+	        this.eat=function(){//实例方法
+	            alert('I am eating');
+	        }
+	    }
+    	
+		var person=new Person('name');
+		person.eat();
+		//如果构造函数直接调用，会发生错误
+    	Person.eat();
+
+在构造函数的原型上添加的方法(属性) ,叫原型方法(属性)。原型方法可以实例化后调用，也可以能过原型调用（但比较少见)。  
+
+	    Person.prototype={
+	        sex:'female',//原型属性
+	        saySex:function(){//原型方法
+	            alert(this.sex);//female，注意，此时实例是没有sex这个属性的，它是通过原型链，找到原型上的sex属性并输出
+	        }
+	    }
+		var person=new Person();
+		person.saySex();//通过实例调用
+		Person.prototype.saySex();//可以通过原型对象直接调用,比较少见,在方法对实例属性或方法没有依赖时，可以这样做
+
+	    Person.saySex();//错误，构造函数不能调用原型对象上的方法
+	    
     
-    var Vivipara=function(){};
-    Vivipara.prototype=new Animal();//继承Animal
-    Vivipara.prototype.sayName=function(){//扩展Animal
-        alert('叽哩呱啦');
-    }
-    
-    var Person=function(name){
-        this.name=name;
-    }
-    Person.prototype=new Vivipara();
-    Person.prototype.sayName=function(){
-        alert('My name is' +this.name);
-    }
-    
-    var p1=new Person('涛哥');
-    p1.eatFood();
-    p1.sayName();//输出My name is 涛哥,而不是叽哩呱啦，因为Person重写了sayName方法
 
- **9.需要注意的地方**
- 1)不能在实例化的对象上设置prototype
+#####4.对象的私有属性与私有方法  
+在其它面向对象的语言中，对象有私有属性与私有方法，外部程序是无法调用与读取的。只能通过对象的提供的接口进行通信。而js是一门动态语言，任何对象任何属性在任何地点都可以被修改。所以是没有私有属性与私有方法的。
+我们可以约定一种标识私有方法与私有属性的方法，如在前面加下划线
 
-    var Person=function(){}
-    var p1=new Person;
-    p1.prototype.sayName=function(){};//错误
+	    function Person(name){
+	        this._name=name;//私有变量
+	    }
+	    Person.prototype={
+	        _sayName:function(){//私有方法
+	            alert(this.name);
+	        },
+	        getName:function(){
+	            return this._name;
+	        },
+	        setName:function(name){
+	            this._name=name;
+	        }
+	    }
 
- 2)构造函数内及原型方法内关键字'this'的指向
+虽然js的对象属性可以在任务时间修改，但我们最好不要直接修改，而是通过该对象提供的接口进行修改。私有方法也不要去调用。
+	    
 
-    var Person=function(name){
-        this.name=name;//this指向的是实例化的对象，而不是构造函数Person
-    }
-    Person.prototype={
-        sayName:function(){
-            console.log(this.name);//**同样，在原型的方法内，this指向的也是实例化出的对象，而不是原型对象。**
-        }
-    }
-
- 3)静态方法（属性)、实例方法(属性)、原型方法(属性)
-
-    var Person=function(){};
-    Person.sayName=function(){
-        alert(this.name);//静态方法内的this关键字指向的是构造函数。
-    }
-    var p1=new Person;
-    p1.sayName();//错误，构造函数的静态方法，实例是不能调用的。
-    Person.sayName();//Person
-    
-    var Person=function(name){
-        this.name=name;//实例属性
-        this.eat=function(){//实例方法
-            alert('I am eating');
-        }
-    }
-    
-    Person.eat();//错误，相对应的，构造函也不能调用实例方法
-    
-    Person.prototype={
-        sex:'female',//原型属性
-        saySex:function(){//原型方法
-            alert(this.sex);//female，注意，此时实例是没有sex这个属性的，它是通过原型链，找到原型上的sex属性并输出
-        }
-    }
-    Person.saySex();//错误，同理,构造函数也不能调用原型对象上的方法
-    Person.prototype.saySex();//可以通过原型对象调用原型方法
-    
-
- 4)对象的私有属性与私有方法
-
-    function Person(name){
-        this._name=name;
-    }
-    Person.prototype={
-        /**
-         * @private
-        **/
-        _sayName:function(){
-            
-        },
-        getName:function(){
-            return this._name;
-        },
-        setName:function(name){
-            this._name=name;
-        }
-    }
-    var p1=new Person('xiaoli');
-    /**
-        虽然js的对象属性可以在任务时间修改，但对于对象标识了私有的属性，最好不要直接修改
-        而是通过该对象提供的接口进行修改,同样，标识了私有的方法，也不要去调用
-     **/
-    p1._name='taoge';//错误
-    p1.setName('William');//正确
+		var p1=new Person('xiaoli');
+	    p1._name='taoge';//不提倡
+	    p1.setName('William');//正确
+		p1._sayName();//不提倡
+		
+**四、实例：用面向对向的方式写一个音乐播放器**
